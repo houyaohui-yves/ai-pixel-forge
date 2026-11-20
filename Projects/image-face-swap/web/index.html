@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Facework · 本地图片工作台</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#workspace" aria-label="Facework 图片工作台"><span class="brand-mark">F<span>·</span></span><span>Facework<small>本地人像工作台</small></span></a>
+      <div class="nav-label">工作空间</div>
+      <nav aria-label="主要导航">
+        <button class="nav-item active" data-page="workspace"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="9" cy="9" r="2"/><path d="m4 17 5-5 4 4 3-3 5 5"/></svg>图片换脸<span class="nav-dot"></span></button>
+        <button class="nav-item" data-page="library"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v10H4Z"/><circle cx="12" cy="12" r="2"/><path d="M8 18v-1a4 4 0 0 1 8 0v1"/></svg>人物素材库</button>
+      </nav>
+      <div class="sidebar-note"><span class="tiny-label">当前流程</span><p>选择已训练模型<br>导入目标图片<br>调整融合并保存</p><span class="note-rule"></span><p class="muted">人物素材与换脸模型分别管理。整理素材不会自动生成模型。</p></div>
+      <div class="runtime"><span class="status-light" id="connection-light"></span><div><strong id="runtime-state">连接本地服务…</strong><small id="runtime-device">正在读取设备状态</small></div><button id="refresh-status" class="icon-button" title="刷新运行状态" aria-label="刷新运行状态">↻</button></div>
+    </aside>
+
+    <main>
+      <header class="topbar"><span id="breadcrumb">工作空间 <span>/</span> 图片换脸</span><span class="local-badge"><span></span>本地处理</span></header>
+      <div id="global-error" class="notice error-notice" role="alert" hidden><span id="global-error-text"></span><button class="icon-button" id="dismiss-error" aria-label="关闭错误提示">×</button></div>
+
+      <section id="workspace-page" class="page" aria-labelledby="workspace-title">
+        <div class="page-heading"><div><span class="eyebrow">IMAGE WORKSPACE</span><h1 id="workspace-title">让每一张脸，自然融入。</h1><p>使用已训练的人物模型，完成单张图片的换脸与融合。</p></div><button class="button secondary" id="reset-workspace">清空工作台</button></div>
+        <div class="workspace-grid">
+          <div class="work-area">
+            <div class="panel image-panel">
+              <div class="panel-heading"><div class="panel-title"><span class="step-number">01</span><h2>图片预览</h2></div><div class="view-legend"><span class="legend-dot"></span>原图与结果对照</div></div>
+              <div class="image-pair">
+                <div class="image-column"><div class="image-label"><span>目标原图</span><span id="image-dimensions">未导入</span></div><label class="image-stage upload-stage" id="target-dropzone" for="target-file" tabindex="0" role="button" aria-label="选择目标图片"><div class="empty-image" id="target-empty"><svg viewBox="0 0 56 56" aria-hidden="true"><rect x="8" y="8" width="40" height="40" rx="10"/><circle cx="21" cy="21" r="4"/><path d="m9 38 12-12 10 10 6-6 10 10"/></svg><strong>导入一张目标图片</strong><span>点击选择，或将图片拖入这里</span><small>支持 JPG、PNG、WEBP</small></div><img id="target-image" alt="目标原图" hidden><div class="image-hover-action" id="replace-image" hidden>更换图片</div></label></div>
+                <div class="image-column"><div class="image-label"><span>换脸结果</span><span id="result-meta">等待处理</span></div><div class="image-stage result-stage"><div class="empty-image" id="result-empty"><svg viewBox="0 0 56 56" aria-hidden="true"><path d="M20 10H10v10m26-10h10v10M10 36v10h10m16 0h10V36"/><path d="m22 28 4 4 9-10"/></svg><strong>在这里查看结果</strong><span>选择人物模型与目标人脸后开始</span></div><img id="result-image" alt="换脸处理结果" hidden></div></div>
+              </div>
+              <div id="work-progress" class="work-progress" role="status" aria-live="polite" hidden><span class="spinner"></span><span id="work-progress-text">正在处理…</span></div>
+              <div class="image-footer"><span id="image-filename">图片会在本地服务中处理</span><a class="button secondary small disabled" id="download-result" aria-disabled="true" download="facework-result.png">保存 PNG</a></div>
+            </div>
+
+            <div class="panel faces-panel"><div class="panel-heading"><div class="panel-title"><span class="step-number">02</span><h2>选择目标人脸</h2></div><span class="subtle-tag" id="face-count">尚未检测</span></div><div id="faces-empty" class="inline-empty">导入图片后，选择需要替换的人脸。</div><div id="face-list" class="face-list"></div><div id="face-quality" class="quality-report" hidden></div></div>
+            <div id="result-warnings" class="notice warning-notice" role="status" hidden></div>
+          </div>
+
+          <aside class="settings panel" aria-label="换脸设置">
+            <div class="panel-heading"><div class="panel-title"><span class="step-number">03</span><h2>模型与融合</h2></div></div>
+            <div class="settings-body"><label class="field-label" for="model-select">人物模型</label><select id="model-select" disabled><option value="">正在读取模型…</option></select><div id="model-description" class="field-help">人物身份来自已训练模型。</div><div id="no-models" class="model-empty" hidden><strong>尚未发现可用模型</strong><p>请导入已训练的 SAEHD df / df-d 模型（首版支持），然后刷新列表。</p><p>上传朋友照片到素材库不会自动训练或切换人物模型。</p><button class="text-button" id="refresh-models">重新读取模型 ↻</button></div>
+              <details class="model-import"><summary>导入本地训练模型</summary><form id="import-model-form"><label class="field-label" for="model-directory">模型文件夹路径</label><input id="model-directory" type="text" placeholder="包含 *_SAEHD_data.dat 的文件夹" required autocomplete="off"><label class="field-label" for="model-name">显示名称（可选）</label><input id="model-name" type="text" maxlength="80" placeholder="例如：朋友 A · 第一版"><button id="import-model-button" class="button secondary small" type="submit">导入模型</button><p id="import-feedback" class="field-help" role="status"></p><p class="field-help">首版支持 SAEHD df / df-d；保留四个组件权重与 data.dat。仅记录本机路径。</p></form></details><p id="runtime-issues" class="notice warning-notice" hidden></p><div class="settings-divider"></div><div class="field-heading"><label class="field-label" for="feather">边缘羽化</label><output id="feather-value" for="feather">8</output></div><input id="feather" type="range" min="0" max="30" value="8"><div class="range-labels"><span>清晰边缘</span><span>柔和过渡</span></div>
+              <div class="field-heading spaced"><label class="field-label" for="erode">遮罩收缩</label><output id="erode-value" for="erode">2</output></div><input id="erode" type="range" min="0" max="20" value="2"><div class="field-help">收小融合范围，减少脸部边缘残留。</div>
+              <label class="toggle-row" for="color-match"><span><strong>颜色匹配</strong><small>让换脸区域接近原图肤色</small></span><input type="checkbox" id="color-match" checked><span class="toggle-track" aria-hidden="true"></span></label>
+              <div class="settings-divider"></div><button class="button primary process-button" id="swap-button" disabled><span>开始图片换脸</span></button><p class="process-help" id="process-help">先导入目标图片并选择模型。</p><div class="settings-footnote">修改参数后，请重新生成结果。</div>
+            </div>
+          </aside>
+        </div>
+        <input id="target-file" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+      </section>
+
+      <section id="library-page" class="page" aria-labelledby="library-title" hidden>
+        <div class="page-heading"><div><span class="eyebrow">IDENTITY LIBRARY</span><h1 id="library-title">为每个人，整理好素材。</h1><p>按人物保存人脸图片，检查质量并导出，用于后续训练。</p></div><span class="subtle-tag">本地素材库</span></div>
+        <div class="notice library-note"><span class="info-symbol">i</span><span><strong>素材整理不会自动训练模型。</strong> 图片换脸页需要另外导入已训练的 SAEHD df / df-d 人物模型。</span></div>
+        <div class="library-grid"><aside class="panel people-panel"><div class="panel-heading"><h2>人物</h2><span id="identity-count" class="subtle-tag">0</span></div><form id="create-identity-form" class="new-identity-form"><label for="identity-name" class="sr-only">新人物名称</label><input id="identity-name" type="text" maxlength="60" placeholder="新人物名称" required autocomplete="off"><button class="button secondary small" type="submit" id="create-identity-button">创建</button></form><div id="identity-list" class="identity-list"></div><p class="people-empty muted" id="people-empty">先创建一个人物，再添加照片。</p></aside>
+          <div class="panel library-content"><div class="panel-heading library-toolbar"><div><h2 id="selected-identity-name">选择或创建人物</h2><p id="library-summary" class="field-help">每个人的素材独立保存。</p></div><div class="toolbar-buttons"><a class="button secondary small disabled" id="export-identity" aria-disabled="true">导出 ZIP</a><button class="button primary small" id="add-library-images" disabled>添加照片 +</button></div></div><div id="library-progress" class="work-progress" role="status" aria-live="polite" hidden><span class="spinner"></span><span id="library-progress-text"></span></div><div id="library-empty" class="library-empty"><svg viewBox="0 0 56 56" aria-hidden="true"><circle cx="28" cy="20" r="9"/><path d="M10 47v-6a18 18 0 0 1 36 0v6"/></svg><strong>把人物素材集中在这里</strong><span>添加清晰、光线自然、角度多样的照片。</span></div><div id="library-items" class="library-items"></div><div class="library-bottom-note">多人照片会暂停收录，请先裁出对应人物再添加。质量提示和朝向仅为辅助筛选，不验证身份，也不保证训练效果。</div></div>
+        </div><input id="library-files" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden>
+      </section>
+      <footer class="app-footer"><span>FACEWORK / 本地图片工作台</span><span>基于 DeepFaceLab 模型流程</span></footer>
+    </main>
+  </div>
+</body>
+</html>

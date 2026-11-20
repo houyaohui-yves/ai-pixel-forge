@@ -1,0 +1,11 @@
+# Local reference sources, archives, weights and datasets are never committed.
+/LocalReferences/
+
+# Also exclude their original locations until they are moved into LocalReferences.
+# The first directory name includes a space before its trailing slash.
+/AI face swap /
+/AI-人脸识别+特征值提取/
+/DeepFaceLab/
+
+# macOS directory metadata.
+.DS_Store
